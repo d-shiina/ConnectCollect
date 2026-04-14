@@ -16,8 +16,8 @@ import type { AppNode } from './nodes/types';
 import type {
   AdapterMetadata,
   FlowDefinition,
+  FlowEvent,
   FlowNode as FlowNodeDef,
-  FlowRunResult,
   LogEntry,
   NodeType,
 } from '../shared/types';
@@ -61,6 +61,57 @@ export const App: React.FC = () => {
   useEffect(() => {
     window.bridge?.listAdapters().then(setAdapters).catch(() => setAdapters([]));
     window.bridge?.getServerPort().then(setServerPort).catch(() => undefined);
+  }, []);
+
+  // Main プロセスから push される実行イベントを購読し UI を同期
+  useEffect(() => {
+    if (!window.bridge?.onFlowEvent) return;
+    const unsubscribe = window.bridge.onFlowEvent((event: FlowEvent) => {
+      switch (event.type) {
+        case 'run:start': {
+          setRunning(true);
+          setNodes((ns) =>
+            ns.map((n) =>
+              n.type === 'adapter'
+                ? { ...n, data: { ...n.data, status: 'idle' as const } }
+                : n,
+            ),
+          );
+          setLogs((prev) => [
+            ...prev,
+            {
+              timestamp: event.timestamp,
+              level: 'info',
+              message: `--- run:start (${event.flowId}) ---`,
+            },
+          ]);
+          break;
+        }
+        case 'run:node': {
+          setNodes((ns) => applyAdapterStatus(ns, event.nodeId, event.status));
+          break;
+        }
+        case 'run:log': {
+          setLogs((prev) => [...prev, event.entry]);
+          break;
+        }
+        case 'run:end': {
+          setRunning(false);
+          setLogs((prev) => [
+            ...prev,
+            {
+              timestamp: event.timestamp,
+              level: event.success ? 'info' : 'error',
+              message: event.success
+                ? `--- run:end success (${event.flowId}) ---`
+                : `--- run:end failed: ${event.error ?? 'unknown'} ---`,
+            },
+          ]);
+          break;
+        }
+      }
+    });
+    return unsubscribe;
   }, []);
 
   const onNodesChange = useCallback(
@@ -121,65 +172,24 @@ export const App: React.FC = () => {
     }
   };
 
-  const resetAdapterStatuses = (): void => {
-    setNodes((ns) =>
-      ns.map((n) =>
-        n.type === 'adapter'
-          ? { ...n, data: { ...n.data, status: 'running' as const } }
-          : n,
-      ),
-    );
-  };
-
   const handleRun = async (): Promise<void> => {
-    setRunning(true);
-    resetAdapterStatuses();
-
+    // UI 状態 (running, ノードステータス, ログ) はすべて Main からの
+    // flow-event で更新されるので、ここでは HTTP 呼び出しだけ行う。
     try {
       const flow = buildFlowDefinition();
       await window.bridge.saveFlow(flow);
 
-      const res = await fetch(
-        `http://127.0.0.1:${serverPort}/flows/${flow.id}/run`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ inputs: { query: 'status = active' } }),
-        },
-      );
-      const result = (await res.json()) as FlowRunResult;
-      setLogs((prev) => [...prev, ...result.logs]);
-
-      setNodes((ns) => {
-        let next = ns;
-        for (const log of result.logs) {
-          if (log.nodeId && log.level === 'error') {
-            next = applyAdapterStatus(next, log.nodeId, 'error');
-          }
-        }
-        if (result.success) {
-          next = next.map((n) =>
-            n.type === 'adapter' && n.data.status !== 'error'
-              ? { ...n, data: { ...n.data, status: 'success' as const } }
-              : n,
-          );
-        }
-        return next;
+      await fetch(`http://127.0.0.1:${serverPort}/flows/${flow.id}/run`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ inputs: { query: 'status = active' } }),
       });
     } catch (err) {
       appendLog({
         timestamp: new Date().toISOString(),
         level: 'error',
-        message: `実行に失敗: ${(err as Error).message}`,
+        message: `実行の呼び出しに失敗: ${(err as Error).message}`,
       });
-      setNodes((ns) =>
-        ns.map((n) =>
-          n.type === 'adapter'
-            ? { ...n, data: { ...n.data, status: 'error' as const } }
-            : n,
-        ),
-      );
-    } finally {
       setRunning(false);
     }
   };
