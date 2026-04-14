@@ -3,7 +3,8 @@ import path from 'node:path';
 import { startServer, stopServer, getServerPort } from './server';
 import { flowStore } from './flowStore';
 import { adapterRegistry, initializeAdapters } from './adapters';
-import type { FlowDefinition } from '../shared/types';
+import { flowEventBus } from './events';
+import type { FlowDefinition, FlowEvent } from '../shared/types';
 
 // Electron Forge Vite plugin が差し込む定数
 declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string | undefined;
@@ -61,6 +62,15 @@ app.whenReady().then(async () => {
   }
 
   mainWindow = createWindow();
+
+  // フロー実行イベントを全 Renderer にブロードキャスト
+  flowEventBus.onEvent((event: FlowEvent) => {
+    for (const win of BrowserWindow.getAllWindows()) {
+      if (!win.isDestroyed()) {
+        win.webContents.send('flow-event', event);
+      }
+    }
+  });
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
