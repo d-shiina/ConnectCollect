@@ -3,7 +3,7 @@
   "productName": "WinActorCloudBridge",
   "version": "0.1.0",
   "description": "WinActor 向けクラウド連携補完ツール",
-  "main": ".vite/build/main.js",
+  "main": ".vite/build/index.js",
   "scripts": {
     "start": "electron-forge start",
     "package": "electron-forge package",
