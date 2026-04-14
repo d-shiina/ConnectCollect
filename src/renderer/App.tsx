@@ -8,7 +8,13 @@ import {
   applyEdgeChanges,
   addEdge,
 } from '@xyflow/react';
-import { FlowCanvas, applyAdapterStatus } from './components/FlowCanvas';
+import {
+  FlowCanvas,
+  applyAdapterStatus,
+  applyNodeIo,
+  clearEdgeAnimations,
+  setEdgesAnimatedForNode,
+} from './components/FlowCanvas';
 import { NodePanel } from './components/NodePanel';
 import { LogPanel } from './components/LogPanel';
 import { Toolbar } from './components/Toolbar';
@@ -82,13 +88,19 @@ export const App: React.FC = () => {
       switch (event.type) {
         case 'run:start': {
           setRunning(true);
+          // 全ノードを idle にリセットし、入出力もクリア
           setNodes((ns) =>
-            ns.map((n) =>
-              n.type === 'adapter'
-                ? { ...n, data: { ...n.data, status: 'idle' as const } }
-                : n,
-            ),
+            ns.map((n) => ({
+              ...n,
+              data: {
+                ...n.data,
+                status: 'idle' as const,
+                lastInput: undefined,
+                lastOutput: undefined,
+              },
+            })),
           );
+          setEdges((es) => clearEdgeAnimations(es));
           setLogs((prev) => [
             ...prev,
             {
@@ -100,7 +112,20 @@ export const App: React.FC = () => {
           break;
         }
         case 'run:node': {
-          setNodes((ns) => applyAdapterStatus(ns, event.nodeId, event.status));
+          setNodes((ns) => {
+            let next = applyAdapterStatus(ns, event.nodeId, event.status);
+            next = applyNodeIo(next, event.nodeId, {
+              input: event.input,
+              output: event.output,
+            });
+            return next;
+          });
+          // 実行中ノードに接続されたエッジをアニメ化。success/error で解除
+          setEdges((es) =>
+            event.status === 'running'
+              ? setEdgesAnimatedForNode(es, event.nodeId)
+              : clearEdgeAnimations(es),
+          );
           break;
         }
         case 'run:log': {
@@ -109,6 +134,7 @@ export const App: React.FC = () => {
         }
         case 'run:end': {
           setRunning(false);
+          setEdges((es) => clearEdgeAnimations(es));
           setLogs((prev) => [
             ...prev,
             {
