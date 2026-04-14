@@ -130,6 +130,11 @@ export async function executeFlow(
               `アダプタが登録されていません: ${adapterType} (node=${node.id})`,
             );
           }
+          if (!adapterRegistry.isEnabled(adapterType)) {
+            throw new Error(
+              `アダプタが無効化されています: ${adapterType} (node=${node.id})`,
+            );
+          }
           const output = await adapter.execute(
             node.data.config ?? {},
             currentPayload,
