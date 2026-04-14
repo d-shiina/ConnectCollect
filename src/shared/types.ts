@@ -75,7 +75,28 @@ export interface AdapterConfigFieldSchema {
   placeholder?: string;
 }
 
-// フロー実行イベント (Main → Renderer に push される)
+// HTTP リクエスト/レスポンス監視用イベント
+export interface HttpRequestInfo {
+  id: string;
+  method: string;
+  path: string;
+  params: Record<string, string>;
+  query: Record<string, unknown>;
+  body: unknown;
+  headers: Record<string, string>;
+  timestamp: string;
+}
+
+export interface HttpResponseInfo {
+  id: string;
+  method: string;
+  path: string;
+  status: number;
+  durationMs: number;
+  timestamp: string;
+}
+
+// フロー実行・HTTP 監視イベント (Main → Renderer に push される)
 export type FlowEvent =
   | { type: 'run:start'; flowId: string; timestamp: string }
   | {
@@ -92,7 +113,9 @@ export type FlowEvent =
       success: boolean;
       error?: string;
       timestamp: string;
-    };
+    }
+  | { type: 'http:request'; request: HttpRequestInfo }
+  | { type: 'http:response'; response: HttpResponseInfo };
 
 // Renderer ↔ Main の IPC API 定義
 export interface BridgeApi {
