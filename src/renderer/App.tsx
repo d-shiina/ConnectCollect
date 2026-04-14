@@ -18,11 +18,13 @@ import {
 import { NodePanel } from './components/NodePanel';
 import { LogPanel } from './components/LogPanel';
 import { Toolbar } from './components/Toolbar';
+import { WinActorCallPanel } from './components/WinActorCallPanel';
 import type { AppNode } from './nodes/types';
 import type {
   AdapterMetadata,
   FlowDefinition,
   FlowEvent,
+  FlowInputDef,
   FlowNode as FlowNodeDef,
   LogEntry,
   NodeType,
@@ -60,9 +62,13 @@ export const App: React.FC = () => {
   const [logs, setLogs] = useState<LogEntry[]>([]);
   const [adapters, setAdapters] = useState<AdapterMetadata[]>([]);
   const [running, setRunning] = useState(false);
-  const [flowId] = useState<string>(SAMPLE_FLOW_ID);
+  const [flowId, setFlowId] = useState<string>(SAMPLE_FLOW_ID);
   const [flowName] = useState<string>('サンプルフロー');
+  const [inputSchema, setInputSchema] = useState<FlowInputDef[]>([
+    { key: 'query', label: '検索語' },
+  ]);
   const [serverPort, setServerPort] = useState<number>(8765);
+  const [winActorPanelOpen, setWinActorPanelOpen] = useState(false);
 
   useEffect(() => {
     window.bridge?.listAdapters().then(setAdapters).catch(() => setAdapters([]));
@@ -220,6 +226,7 @@ export const App: React.FC = () => {
       name: flowName,
       nodes: flowNodes,
       edges: edges.map((e) => ({ id: e.id, source: e.source, target: e.target })),
+      inputSchema,
       createdAt: now,
       updatedAt: now,
     };
@@ -268,9 +275,12 @@ export const App: React.FC = () => {
   return (
     <div className="app">
       <Toolbar
+        flowId={flowId}
         flowName={flowName}
+        onFlowIdChange={setFlowId}
         onSave={handleSave}
         onRun={handleRun}
+        onOpenWinActorPanel={() => setWinActorPanelOpen(true)}
         running={running}
       />
       <NodePanel adapters={adapters} />
@@ -282,6 +292,14 @@ export const App: React.FC = () => {
         onConnect={onConnect}
       />
       <LogPanel logs={logs} />
+      <WinActorCallPanel
+        open={winActorPanelOpen}
+        onOpenChange={setWinActorPanelOpen}
+        flowId={flowId}
+        serverPort={serverPort}
+        inputSchema={inputSchema}
+        onInputSchemaChange={setInputSchema}
+      />
     </div>
   );
 };
