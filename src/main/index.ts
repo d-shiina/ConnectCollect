@@ -1,5 +1,6 @@
-import { app, BrowserWindow, ipcMain } from 'electron';
+import { app, BrowserWindow, ipcMain, shell } from 'electron';
 import path from 'node:path';
+import { promises as fs } from 'node:fs';
 import { startServer, stopServer, getServerPort } from './server';
 import { flowStore } from './flowStore';
 import { adapterRegistry, initializeAdapters } from './adapters';
@@ -11,6 +12,16 @@ declare const MAIN_WINDOW_VITE_DEV_SERVER_URL: string | undefined;
 declare const MAIN_WINDOW_VITE_NAME: string;
 
 let mainWindow: BrowserWindow | null = null;
+
+function getPluginDir(): string {
+  return path.join(app.getPath('userData'), 'plugins');
+}
+
+async function ensurePluginDir(): Promise<string> {
+  const dir = getPluginDir();
+  await fs.mkdir(dir, { recursive: true });
+  return dir;
+}
 
 function createWindow(): BrowserWindow {
   const win = new BrowserWindow({
@@ -47,13 +58,32 @@ function registerIpcHandlers(): void {
   ipcMain.handle('flows:delete', async (_e, id: string) =>
     flowStore.deleteFlow(id),
   );
-  ipcMain.handle('adapters:list', async () => adapterRegistry.listMetadata());
+  ipcMain.handle('adapters:list', async () => adapterRegistry.listEnabledMetadata());
   ipcMain.handle('server:port', async () => getServerPort());
+
+  // Plugin management
+  ipcMain.handle('plugins:list', async () => adapterRegistry.listPlugins());
+  ipcMain.handle(
+    'plugins:setEnabled',
+    async (_e, name: string, enabled: boolean) => {
+      adapterRegistry.setEnabled(name, enabled);
+    },
+  );
+  ipcMain.handle('plugins:openDir', async () => {
+    const dir = await ensurePluginDir();
+    await shell.openPath(dir);
+  });
 }
 
 app.whenReady().then(async () => {
   initializeAdapters();
   registerIpcHandlers();
+
+  try {
+    await ensurePluginDir();
+  } catch (err) {
+    console.error('[main] failed to ensure plugin dir', err);
+  }
 
   try {
     await startServer();

@@ -8,6 +8,10 @@ const bridge: BridgeApi = {
   deleteFlow: (id: string) => ipcRenderer.invoke('flows:delete', id),
   listAdapters: () => ipcRenderer.invoke('adapters:list'),
   getServerPort: () => ipcRenderer.invoke('server:port'),
+  listPlugins: () => ipcRenderer.invoke('plugins:list'),
+  setPluginEnabled: (name: string, enabled: boolean) =>
+    ipcRenderer.invoke('plugins:setEnabled', name, enabled),
+  openPluginDir: () => ipcRenderer.invoke('plugins:openDir'),
   onFlowEvent: (callback: (event: FlowEvent) => void) => {
     const listener = (_: IpcRendererEvent, event: FlowEvent): void =>
       callback(event);
