@@ -75,12 +75,15 @@ export async function executeFlow(
   const emitNode = (
     nodeId: string,
     status: 'running' | 'success' | 'error',
+    io?: { input?: unknown; output?: unknown },
   ): void => {
     flowEventBus.emitEvent({
       type: 'run:node',
       flowId: flow.id,
       nodeId,
       status,
+      input: io?.input,
+      output: io?.output,
       timestamp: new Date().toISOString(),
     });
   };
@@ -100,14 +103,20 @@ export async function executeFlow(
 
     for (const node of order) {
       currentNodeId = node.id;
-      emitNode(node.id, 'running');
+      // ノード入力として payload のスナップショットを取る
+      const nodeInput = { ...currentPayload };
+      emitNode(node.id, 'running', { input: nodeInput });
       pushLog(makeLog('info', `ノード ${node.data.label} を実行`, node.id));
+
+      // このノードの出力を表現するための値
+      let nodeOutput: unknown = nodeInput;
 
       switch (node.type) {
         case 'trigger': {
           pushLog(
             makeLog('info', 'トリガーノード: 入力をパススルー', node.id),
           );
+          nodeOutput = nodeInput;
           break;
         }
         case 'adapter': {
@@ -133,6 +142,10 @@ export async function executeFlow(
                 node.id,
               ),
             );
+            emitNode(node.id, 'error', {
+              input: nodeInput,
+              output: { error: output.error },
+            });
             throw new Error(output.error ?? `${adapter.name} adapter failed`);
           }
           pushLog(makeLog('info', `${adapter.name} 成功`, node.id));
@@ -141,6 +154,7 @@ export async function executeFlow(
             [`${adapter.name}Result`]: output.data,
             last: output.data,
           };
+          nodeOutput = output.data;
           break;
         }
         case 'transform': {
@@ -151,6 +165,7 @@ export async function executeFlow(
               node.id,
             ),
           );
+          nodeOutput = nodeInput;
           break;
         }
         default: {
@@ -158,7 +173,7 @@ export async function executeFlow(
         }
       }
 
-      emitNode(node.id, 'success');
+      emitNode(node.id, 'success', { input: nodeInput, output: nodeOutput });
     }
 
     pushLog(makeLog('info', 'フロー実行完了'));
