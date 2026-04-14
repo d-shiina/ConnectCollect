@@ -59,6 +59,175 @@ body,
   gap: 8px;
 }
 
+.flow-id-field {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 16px;
+  flex: 1;
+}
+
+.flow-id-field label {
+  font-size: 11px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.flow-id-field input {
+  background: #1d2330;
+  color: var(--text);
+  border: 1px solid var(--panel-border);
+  border-radius: 4px;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-family: 'SFMono-Regular', Menlo, Consolas, monospace;
+  min-width: 220px;
+}
+
+.flow-id-field input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.flow-id-field input:disabled {
+  opacity: 0.6;
+}
+
+/* Base UI Dialog 共通スタイル */
+.dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  z-index: 100;
+}
+
+.dialog-popup {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 8px;
+  padding: 24px;
+  min-width: 360px;
+  max-height: 90vh;
+  overflow-y: auto;
+  z-index: 101;
+  color: var(--text);
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.5);
+}
+
+.dialog-popup.dialog-wide {
+  width: 720px;
+  max-width: 90vw;
+}
+
+.dialog-title {
+  margin: 0 0 4px 0;
+  font-size: 16px;
+}
+
+.dialog-desc {
+  margin: 0 0 16px 0;
+  color: var(--text-dim);
+  font-size: 12px;
+}
+
+.dialog-desc code {
+  background: #1d2330;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 11px;
+}
+
+.dialog-section {
+  margin-top: 14px;
+  padding-top: 14px;
+  border-top: 1px solid var(--panel-border);
+}
+
+.dialog-section-head {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-dim);
+  margin-bottom: 8px;
+}
+
+.dialog-section .muted {
+  color: var(--text-dim);
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+
+.input-def-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.input-def-row input {
+  flex: 1;
+  background: #1d2330;
+  color: var(--text);
+  border: 1px solid var(--panel-border);
+  border-radius: 4px;
+  padding: 5px 8px;
+  font-size: 12px;
+  font-family: 'SFMono-Regular', Menlo, Consolas, monospace;
+}
+
+.input-def-row input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.mode-tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.copy-field {
+  margin-bottom: 10px;
+}
+
+.copy-field-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+}
+
+.copy-field-head span {
+  font-size: 11px;
+  color: var(--text-dim);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.copy-field-value {
+  display: block;
+  background: #12161f;
+  border: 1px solid var(--panel-border);
+  border-radius: 4px;
+  padding: 8px 10px;
+  font-family: 'SFMono-Regular', Menlo, Consolas, monospace;
+  font-size: 12px;
+  color: var(--text);
+  word-break: break-all;
+  white-space: pre-wrap;
+}
+
+.copy-field-value.multiline {
+  max-height: 220px;
+  overflow: auto;
+  margin: 0;
+}
+
 .app-sidebar {
   grid-area: sidebar;
   background: var(--panel);
