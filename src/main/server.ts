@@ -1,4 +1,9 @@
-import express from 'express';
+import express, {
+  type ErrorRequestHandler,
+  type NextFunction,
+  type Request,
+  type Response,
+} from 'express';
 import cors from 'cors';
 import type { Server } from 'node:http';
 import { createRouter } from './router';
@@ -41,6 +46,34 @@ export async function startServer(): Promise<number> {
   );
 
   app.use('/', createRouter(VERSION));
+
+  // JSON パース失敗 (body-parser の SyntaxError) を 400 に変換。
+  // スタックトレースは出さずメッセージだけログに残す。
+  const jsonErrorHandler: ErrorRequestHandler = (
+    err: unknown,
+    req: Request,
+    res: Response,
+    next: NextFunction,
+  ) => {
+    if (
+      err instanceof SyntaxError &&
+      'status' in err &&
+      (err as { status?: number }).status === 400 &&
+      'body' in err
+    ) {
+      console.warn(
+        `[server] invalid JSON body on ${req.method} ${req.originalUrl}: ${err.message}`,
+      );
+      res.status(400).json({
+        success: false,
+        error: 'invalid JSON body',
+        detail: err.message,
+      });
+      return;
+    }
+    next(err);
+  };
+  app.use(jsonErrorHandler);
 
   const port = Number(process.env.PORT ?? DEFAULT_PORT);
   activePort = port;
