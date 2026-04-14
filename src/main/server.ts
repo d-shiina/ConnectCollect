@@ -2,12 +2,15 @@ import express, {
   type ErrorRequestHandler,
   type NextFunction,
   type Request,
+  type RequestHandler,
   type Response,
 } from 'express';
+import { randomUUID } from 'node:crypto';
 import cors from 'cors';
 import type { Server } from 'node:http';
 import { createRouter } from './router';
 import { initializeAdapters } from './adapters';
+import { flowEventBus } from './events';
 
 const DEFAULT_PORT = 8765;
 const VERSION = '0.1.0';
@@ -25,6 +28,58 @@ let activePort = DEFAULT_PORT;
 export function getServerPort(): number {
   return activePort;
 }
+
+/**
+ * 全 HTTP リクエスト/レスポンスを flowEventBus に流す監視ミドルウェア。
+ * Renderer のログパネルから届いた body や params を確認できるようにする。
+ * 機密ヘッダ (authorization, cookie) はマスクする。
+ */
+const SENSITIVE_HEADERS = new Set(['authorization', 'cookie', 'x-api-key']);
+
+function sanitizeHeaders(raw: Request['headers']): Record<string, string> {
+  const out: Record<string, string> = {};
+  for (const [k, v] of Object.entries(raw)) {
+    if (v === undefined) continue;
+    const value = Array.isArray(v) ? v.join(', ') : String(v);
+    out[k] = SENSITIVE_HEADERS.has(k.toLowerCase()) ? '***' : value;
+  }
+  return out;
+}
+
+const httpMonitor: RequestHandler = (req, res, next) => {
+  const requestId = randomUUID();
+  const startedAt = Date.now();
+
+  flowEventBus.emitEvent({
+    type: 'http:request',
+    request: {
+      id: requestId,
+      method: req.method,
+      path: req.originalUrl,
+      params: { ...(req.params as Record<string, string>) },
+      query: { ...(req.query as Record<string, unknown>) },
+      body: req.body,
+      headers: sanitizeHeaders(req.headers),
+      timestamp: new Date(startedAt).toISOString(),
+    },
+  });
+
+  res.on('finish', () => {
+    flowEventBus.emitEvent({
+      type: 'http:response',
+      response: {
+        id: requestId,
+        method: req.method,
+        path: req.originalUrl,
+        status: res.statusCode,
+        durationMs: Date.now() - startedAt,
+        timestamp: new Date().toISOString(),
+      },
+    });
+  });
+
+  next();
+};
 
 export async function startServer(): Promise<number> {
   if (server) return activePort;
@@ -44,6 +99,10 @@ export async function startServer(): Promise<number> {
       },
     }),
   );
+
+  // JSON パース後・ルーティング前に監視ミドルウェアを挾む。
+  // これで body は parse 済みの JS オブジェクトとして取れる。
+  app.use(httpMonitor);
 
   app.use('/', createRouter(VERSION));
 
