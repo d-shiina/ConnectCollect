@@ -104,6 +104,10 @@ export type FlowEvent =
       flowId: string;
       nodeId: string;
       status: 'running' | 'success' | 'error';
+      /** running 時に入ってきたデータ (payload) */
+      input?: unknown;
+      /** success/error 時にこのノードから出ていくデータ */
+      output?: unknown;
       timestamp: string;
     }
   | { type: 'run:log'; flowId: string; entry: LogEntry }
