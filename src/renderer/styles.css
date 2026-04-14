@@ -227,6 +227,184 @@ body,
   margin: 0;
 }
 
+/* ==========================
+   プラグイン管理パネル
+   ========================== */
+
+.plugin-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.plugin-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 12px;
+  padding: 10px 12px;
+  background: #12161f;
+  border: 1px solid var(--panel-border);
+  border-radius: 6px;
+  transition: border-color 120ms ease, opacity 120ms ease;
+}
+
+.plugin-row.enabled {
+  border-color: rgba(34, 197, 94, 0.3);
+}
+.plugin-row.disabled {
+  opacity: 0.55;
+}
+
+.plugin-row-main {
+  min-width: 0;
+}
+
+.plugin-row-title {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 2px;
+  flex-wrap: wrap;
+}
+
+.plugin-name {
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.plugin-id {
+  font-family: 'SFMono-Regular', Menlo, Consolas, monospace;
+  font-size: 10px;
+  color: var(--text-dim);
+  background: rgba(255, 255, 255, 0.04);
+  padding: 1px 6px;
+  border-radius: 3px;
+}
+
+.plugin-source {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+.plugin-source.source-builtin {
+  background: rgba(76, 139, 245, 0.2);
+  color: #7cb7ff;
+}
+.plugin-source.source-user {
+  background: rgba(228, 182, 90, 0.2);
+  color: #e4c97a;
+}
+
+.plugin-desc {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+
+.plugin-row-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.plugin-detail {
+  grid-column: 1 / -1;
+  margin-top: 6px;
+  padding-top: 8px;
+  border-top: 1px solid var(--panel-border);
+}
+
+.plugin-detail-head {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-dim);
+  margin-bottom: 4px;
+}
+
+.plugin-schema {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.plugin-schema li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+}
+
+.plugin-schema code {
+  font-family: 'SFMono-Regular', Menlo, Consolas, monospace;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+
+.plugin-schema-type {
+  font-size: 10px;
+  color: var(--accent);
+}
+
+.plugin-schema-label {
+  color: var(--text-dim);
+}
+
+/* トグルスイッチ */
+.toggle {
+  position: relative;
+  display: inline-block;
+  width: 34px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.toggle input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.toggle-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #2a2f3c;
+  border-radius: 18px;
+  transition: background 120ms ease;
+}
+
+.toggle-slider::before {
+  content: '';
+  position: absolute;
+  height: 14px;
+  width: 14px;
+  left: 2px;
+  top: 2px;
+  background: #c9ced8;
+  border-radius: 50%;
+  transition: transform 120ms ease;
+}
+
+.toggle input:checked + .toggle-slider {
+  background: var(--success);
+}
+
+.toggle input:checked + .toggle-slider::before {
+  transform: translateX(16px);
+  background: #fff;
+}
+
 .app-sidebar {
   grid-area: sidebar;
   background: var(--panel);
@@ -317,10 +495,6 @@ body,
   border-radius: 50%;
   background: var(--accent);
 }
-
-/* ==========================
-   Blender 風カスタムノード
-   ========================== */
 
 .rf-node {
   --node-color: #4c8bf5;
