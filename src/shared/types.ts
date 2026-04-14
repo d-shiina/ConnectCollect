@@ -75,6 +75,25 @@ export interface AdapterConfigFieldSchema {
   placeholder?: string;
 }
 
+// フロー実行イベント (Main → Renderer に push される)
+export type FlowEvent =
+  | { type: 'run:start'; flowId: string; timestamp: string }
+  | {
+      type: 'run:node';
+      flowId: string;
+      nodeId: string;
+      status: 'running' | 'success' | 'error';
+      timestamp: string;
+    }
+  | { type: 'run:log'; flowId: string; entry: LogEntry }
+  | {
+      type: 'run:end';
+      flowId: string;
+      success: boolean;
+      error?: string;
+      timestamp: string;
+    };
+
 // Renderer ↔ Main の IPC API 定義
 export interface BridgeApi {
   listFlows(): Promise<FlowDefinition[]>;
@@ -83,6 +102,8 @@ export interface BridgeApi {
   deleteFlow(id: string): Promise<void>;
   listAdapters(): Promise<AdapterMetadata[]>;
   getServerPort(): Promise<number>;
+  /** フロー実行イベントの購読。unsubscribe 関数を返す */
+  onFlowEvent(callback: (event: FlowEvent) => void): () => void;
 }
 
 declare global {
