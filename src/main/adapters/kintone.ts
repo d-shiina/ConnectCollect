@@ -1,4 +1,10 @@
-import type { Adapter, AdapterConfig, AdapterInput, AdapterOutput } from './base';
+import type {
+  Adapter,
+  AdapterConfig,
+  AdapterExecutionContext,
+  AdapterInput,
+  AdapterOutput,
+} from './base';
 import type { AdapterMetadata } from '../../shared/types';
 
 interface KintoneRecord {
@@ -37,7 +43,11 @@ export const kintoneAdapter: Adapter = {
   name: 'kintone',
   metadata,
 
-  async execute(config: AdapterConfig, input: AdapterInput): Promise<AdapterOutput> {
+  async execute(
+    config: AdapterConfig,
+    input: AdapterInput,
+    _ctx: AdapterExecutionContext,
+  ): Promise<AdapterOutput> {
     const apiToken = typeof config.apiToken === 'string' ? config.apiToken : '';
     const appId = typeof config.appId === 'string' ? config.appId : '';
 
