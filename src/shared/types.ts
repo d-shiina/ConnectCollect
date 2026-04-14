@@ -84,6 +84,12 @@ export interface AdapterConfigFieldSchema {
   placeholder?: string;
 }
 
+/** プラグイン管理 UI 用にランタイム情報を付与したメタ情報 */
+export interface PluginInfo extends AdapterMetadata {
+  enabled: boolean;
+  source: 'builtin' | 'user';
+}
+
 // HTTP リクエスト/レスポンス監視用イベント
 export interface HttpRequestInfo {
   id: string;
@@ -138,6 +144,12 @@ export interface BridgeApi {
   deleteFlow(id: string): Promise<void>;
   listAdapters(): Promise<AdapterMetadata[]>;
   getServerPort(): Promise<number>;
+  /** プラグイン (アダプタ) 一覧をランタイム情報付きで取得 */
+  listPlugins(): Promise<PluginInfo[]>;
+  /** プラグインの有効/無効を切り替え */
+  setPluginEnabled(name: string, enabled: boolean): Promise<void>;
+  /** プラグインフォルダをファイラで開く */
+  openPluginDir(): Promise<void>;
   /** フロー実行イベントの購読。unsubscribe 関数を返す */
   onFlowEvent(callback: (event: FlowEvent) => void): () => void;
 }
