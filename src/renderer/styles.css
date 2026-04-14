@@ -188,6 +188,80 @@ body,
   color: var(--text-dim);
 }
 
+/* ノード上の入出力データボックス */
+.rf-node .io-box {
+  margin-top: 6px;
+  background: #12161f;
+  border: 1px solid var(--panel-border);
+  border-radius: 4px;
+  font-size: 10px;
+  max-width: 260px;
+}
+
+.rf-node .io-box > summary {
+  cursor: pointer;
+  padding: 3px 6px;
+  list-style: none;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--text-dim);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.rf-node .io-box > summary::-webkit-details-marker {
+  display: none;
+}
+
+.rf-node .io-box > summary::before {
+  content: '▶';
+  font-size: 8px;
+  transition: transform 120ms ease;
+}
+
+.rf-node .io-box[open] > summary::before {
+  transform: rotate(90deg);
+}
+
+.rf-node .io-box.io-in > summary {
+  color: #7cc4ff;
+}
+.rf-node .io-box.io-out > summary {
+  color: #7aeab5;
+}
+
+.rf-node .io-pre {
+  margin: 0;
+  padding: 6px 8px;
+  max-height: 140px;
+  overflow: auto;
+  font-family: 'SFMono-Regular', Menlo, Consolas, 'Liberation Mono', monospace;
+  font-size: 10px;
+  color: var(--text);
+  white-space: pre-wrap;
+  word-break: break-all;
+  border-top: 1px solid var(--panel-border);
+}
+
+/* エッジのアニメ (データが流れている感) */
+.react-flow__edge.animated .react-flow__edge-path {
+  stroke: var(--accent);
+  stroke-dasharray: 6 4;
+  animation: dataflow 0.6s linear infinite;
+}
+
+@keyframes dataflow {
+  from {
+    stroke-dashoffset: 20;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
 .log-list {
   flex: 1;
   overflow-y: auto;
