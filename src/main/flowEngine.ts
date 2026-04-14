@@ -5,6 +5,7 @@ import type {
   LogEntry,
 } from '../shared/types';
 import { adapterRegistry } from './adapters';
+import { flowEventBus } from './events';
 
 /**
  * 有向グラフからトポロジカル順で実行順序を決定する。
@@ -65,20 +66,46 @@ export async function executeFlow(
   inputs: Record<string, unknown>,
 ): Promise<FlowRunResult> {
   const logs: LogEntry[] = [];
-  logs.push(makeLog('info', `フロー "${flow.name}" の実行を開始`));
+
+  const pushLog = (entry: LogEntry): void => {
+    logs.push(entry);
+    flowEventBus.emitEvent({ type: 'run:log', flowId: flow.id, entry });
+  };
+
+  const emitNode = (
+    nodeId: string,
+    status: 'running' | 'success' | 'error',
+  ): void => {
+    flowEventBus.emitEvent({
+      type: 'run:node',
+      flowId: flow.id,
+      nodeId,
+      status,
+      timestamp: new Date().toISOString(),
+    });
+  };
+
+  flowEventBus.emitEvent({
+    type: 'run:start',
+    flowId: flow.id,
+    timestamp: new Date().toISOString(),
+  });
+  pushLog(makeLog('info', `フロー "${flow.name}" の実行を開始`));
 
   let currentPayload: Record<string, unknown> = { ...inputs };
+  let currentNodeId: string | null = null;
 
   try {
     const order = computeExecutionOrder(flow);
 
     for (const node of order) {
-      logs.push(makeLog('info', `ノード ${node.data.label} を実行`, node.id));
+      currentNodeId = node.id;
+      emitNode(node.id, 'running');
+      pushLog(makeLog('info', `ノード ${node.data.label} を実行`, node.id));
 
       switch (node.type) {
         case 'trigger': {
-          // トリガーノードはインプットをそのまま通す
-          logs.push(
+          pushLog(
             makeLog('info', 'トリガーノード: 入力をパススルー', node.id),
           );
           break;
@@ -99,7 +126,7 @@ export async function executeFlow(
             currentPayload,
           );
           if (!output.success) {
-            logs.push(
+            pushLog(
               makeLog(
                 'error',
                 `${adapter.name} エラー: ${output.error ?? 'unknown'}`,
@@ -108,9 +135,7 @@ export async function executeFlow(
             );
             throw new Error(output.error ?? `${adapter.name} adapter failed`);
           }
-          logs.push(
-            makeLog('info', `${adapter.name} 成功`, node.id),
-          );
+          pushLog(makeLog('info', `${adapter.name} 成功`, node.id));
           currentPayload = {
             ...currentPayload,
             [`${adapter.name}Result`]: output.data,
@@ -119,8 +144,7 @@ export async function executeFlow(
           break;
         }
         case 'transform': {
-          // プレースホルダ: 現状は入力そのまま
-          logs.push(
+          pushLog(
             makeLog(
               'info',
               '変換ノード: 現時点では入力をそのまま通します',
@@ -130,14 +154,20 @@ export async function executeFlow(
           break;
         }
         default: {
-          logs.push(
-            makeLog('warn', `未知のノード種別: ${node.type}`, node.id),
-          );
+          pushLog(makeLog('warn', `未知のノード種別: ${node.type}`, node.id));
         }
       }
+
+      emitNode(node.id, 'success');
     }
 
-    logs.push(makeLog('info', 'フロー実行完了'));
+    pushLog(makeLog('info', 'フロー実行完了'));
+    flowEventBus.emitEvent({
+      type: 'run:end',
+      flowId: flow.id,
+      success: true,
+      timestamp: new Date().toISOString(),
+    });
     return {
       success: true,
       flowId: flow.id,
@@ -147,7 +177,15 @@ export async function executeFlow(
     };
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
-    logs.push(makeLog('error', `フロー実行失敗: ${message}`));
+    if (currentNodeId) emitNode(currentNodeId, 'error');
+    pushLog(makeLog('error', `フロー実行失敗: ${message}`));
+    flowEventBus.emitEvent({
+      type: 'run:end',
+      flowId: flow.id,
+      success: false,
+      error: message,
+      timestamp: new Date().toISOString(),
+    });
     return {
       success: false,
       flowId: flow.id,
