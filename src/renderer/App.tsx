@@ -66,6 +66,18 @@ export const App: React.FC = () => {
   // Main プロセスから push される実行イベントを購読し UI を同期
   useEffect(() => {
     if (!window.bridge?.onFlowEvent) return;
+
+    const fmtJson = (v: unknown): string => {
+      if (v === undefined || v === null) return '';
+      try {
+        const s = JSON.stringify(v);
+        if (!s || s === '{}' || s === '""') return '';
+        return s;
+      } catch {
+        return String(v);
+      }
+    };
+
     const unsubscribe = window.bridge.onFlowEvent((event: FlowEvent) => {
       switch (event.type) {
         case 'run:start': {
@@ -105,6 +117,39 @@ export const App: React.FC = () => {
               message: event.success
                 ? `--- run:end success (${event.flowId}) ---`
                 : `--- run:end failed: ${event.error ?? 'unknown'} ---`,
+            },
+          ]);
+          break;
+        }
+        case 'http:request': {
+          const { method, path, params, query, body } = event.request;
+          const parts = [`→ ${method} ${path}`];
+          const p = fmtJson(params);
+          const q = fmtJson(query);
+          const b = fmtJson(body);
+          if (p) parts.push(`params=${p}`);
+          if (q) parts.push(`query=${q}`);
+          if (b) parts.push(`body=${b}`);
+          setLogs((prev) => [
+            ...prev,
+            {
+              timestamp: event.request.timestamp,
+              level: 'info',
+              message: parts.join('  '),
+            },
+          ]);
+          break;
+        }
+        case 'http:response': {
+          const { method, path, status, durationMs } = event.response;
+          const level: LogEntry['level'] =
+            status >= 500 ? 'error' : status >= 400 ? 'warn' : 'info';
+          setLogs((prev) => [
+            ...prev,
+            {
+              timestamp: event.response.timestamp,
+              level,
+              message: `← ${status} ${method} ${path} (${durationMs}ms)`,
             },
           ]);
           break;
