@@ -26,12 +26,21 @@ export interface FlowEdge {
   target: string;
 }
 
+// WinActor から渡ってくる入力パラメータの定義 (フロー単位)
+export interface FlowInputDef {
+  key: string;
+  label?: string;
+  example?: string;
+}
+
 // フロー定義本体
 export interface FlowDefinition {
   id: string;
   name: string;
   nodes: FlowNode[];
   edges: FlowEdge[];
+  /** WinActor からのリクエストで期待する入力パラメータ一覧 (オプション) */
+  inputSchema?: FlowInputDef[];
   createdAt: string;
   updatedAt: string;
 }
