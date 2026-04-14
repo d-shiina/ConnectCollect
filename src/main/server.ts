@@ -89,6 +89,7 @@ export async function startServer(): Promise<number> {
   const app = express();
 
   app.use(express.json({ limit: '1mb' }));
+  app.use(express.urlencoded({ extended: true, limit: '1mb' }));
   app.use(
     cors({
       origin: (origin, callback) => {
