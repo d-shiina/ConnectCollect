@@ -3,16 +3,22 @@ import type { NodeData } from '../../shared/types';
 
 export type AdapterRunStatus = 'idle' | 'running' | 'success' | 'error';
 
-export interface AdapterNodeData extends NodeData {
+/** 実行中に Main から push される入出力スナップショット */
+export interface NodeRuntimeData {
   status?: AdapterRunStatus;
+  lastInput?: unknown;
+  lastOutput?: unknown;
+}
+
+export interface AdapterNodeData extends NodeData, NodeRuntimeData {
   [key: string]: unknown;
 }
 
-export interface TriggerNodeData extends NodeData {
+export interface TriggerNodeData extends NodeData, NodeRuntimeData {
   [key: string]: unknown;
 }
 
-export interface TransformNodeData extends NodeData {
+export interface TransformNodeData extends NodeData, NodeRuntimeData {
   [key: string]: unknown;
 }
 
