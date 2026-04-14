@@ -19,6 +19,7 @@ import { NodePanel } from './components/NodePanel';
 import { LogPanel } from './components/LogPanel';
 import { Toolbar } from './components/Toolbar';
 import { WinActorCallPanel } from './components/WinActorCallPanel';
+import { PluginManagerPanel } from './components/PluginManagerPanel';
 import type { AppNode } from './nodes/types';
 import type {
   AdapterMetadata,
@@ -69,9 +70,14 @@ export const App: React.FC = () => {
   ]);
   const [serverPort, setServerPort] = useState<number>(8765);
   const [winActorPanelOpen, setWinActorPanelOpen] = useState(false);
+  const [pluginPanelOpen, setPluginPanelOpen] = useState(false);
+
+  const refreshAdapters = (): void => {
+    window.bridge?.listAdapters().then(setAdapters).catch(() => setAdapters([]));
+  };
 
   useEffect(() => {
-    window.bridge?.listAdapters().then(setAdapters).catch(() => setAdapters([]));
+    refreshAdapters();
     window.bridge?.getServerPort().then(setServerPort).catch(() => undefined);
   }, []);
 
@@ -94,7 +100,6 @@ export const App: React.FC = () => {
       switch (event.type) {
         case 'run:start': {
           setRunning(true);
-          // 全ノードを idle にリセットし、入出力もクリア
           setNodes((ns) =>
             ns.map((n) => ({
               ...n,
@@ -126,7 +131,6 @@ export const App: React.FC = () => {
             });
             return next;
           });
-          // 実行中ノードに接続されたエッジをアニメ化。success/error で解除
           setEdges((es) =>
             event.status === 'running'
               ? setEdgesAnimatedForNode(es, event.nodeId)
@@ -251,8 +255,6 @@ export const App: React.FC = () => {
   };
 
   const handleRun = async (): Promise<void> => {
-    // UI 状態 (running, ノードステータス, ログ) はすべて Main からの
-    // flow-event で更新されるので、ここでは HTTP 呼び出しだけ行う。
     try {
       const flow = buildFlowDefinition();
       await window.bridge.saveFlow(flow);
@@ -281,6 +283,7 @@ export const App: React.FC = () => {
         onSave={handleSave}
         onRun={handleRun}
         onOpenWinActorPanel={() => setWinActorPanelOpen(true)}
+        onOpenPluginManager={() => setPluginPanelOpen(true)}
         running={running}
       />
       <NodePanel adapters={adapters} />
@@ -299,6 +302,11 @@ export const App: React.FC = () => {
         serverPort={serverPort}
         inputSchema={inputSchema}
         onInputSchemaChange={setInputSchema}
+      />
+      <PluginManagerPanel
+        open={pluginPanelOpen}
+        onOpenChange={setPluginPanelOpen}
+        onPluginsChanged={refreshAdapters}
       />
     </div>
   );

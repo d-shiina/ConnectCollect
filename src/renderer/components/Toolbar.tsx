@@ -7,6 +7,7 @@ interface Props {
   onSave: () => void;
   onRun: () => void;
   onOpenWinActorPanel: () => void;
+  onOpenPluginManager: () => void;
   running: boolean;
 }
 
@@ -20,6 +21,7 @@ export const Toolbar: React.FC<Props> = ({
   onSave,
   onRun,
   onOpenWinActorPanel,
+  onOpenPluginManager,
   running,
 }) => {
   const handleIdChange = (e: React.ChangeEvent<HTMLInputElement>): void => {
@@ -45,6 +47,9 @@ export const Toolbar: React.FC<Props> = ({
         />
       </div>
       <div className="actions">
+        <button className="btn ghost" onClick={onOpenPluginManager}>
+          プラグイン
+        </button>
         <button className="btn ghost" onClick={onOpenWinActorPanel}>
           WinActor 呼び出し
         </button>
