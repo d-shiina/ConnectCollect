@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Dialog } from '@base-ui-components/react/dialog';
 import type { PluginInfo } from '../../shared/types';
+import { PluginCredentials } from './PluginCredentials';
 
 interface Props {
   open: boolean;
@@ -116,6 +117,12 @@ export const PluginManagerPanel: React.FC<Props> = ({
                             </li>
                           ))}
                         </ul>
+                      )}
+                      {p.credentialSchema && p.credentialSchema.length > 0 && (
+                        <PluginCredentials
+                          pluginName={p.name}
+                          schema={p.credentialSchema}
+                        />
                       )}
                     </div>
                   )}
