@@ -1,12 +1,13 @@
 import { adapterRegistry } from './registry';
 import { kintoneAdapter } from './kintone';
+import { boxAdapter } from './box';
 import type { Adapter } from './base';
 
 /**
  * ビルトインアダプタ一覧。
  * ここに追記するだけで新しいアダプタがプラグインとして登録される。
  */
-const builtInAdapters: Adapter[] = [kintoneAdapter];
+const builtInAdapters: Adapter[] = [kintoneAdapter, boxAdapter];
 
 let initialized = false;
 
