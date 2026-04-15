@@ -1,8 +1,10 @@
-import React, { useMemo } from 'react';
+import React, { useCallback, useMemo } from 'react';
 import {
   ReactFlow,
+  ReactFlowProvider,
   Background,
   Controls,
+  useReactFlow,
   type Connection,
   type Edge,
   type NodeChange,
@@ -12,6 +14,7 @@ import { TriggerNode } from '../nodes/TriggerNode';
 import { AdapterNode } from '../nodes/AdapterNode';
 import { TransformNode } from '../nodes/TransformNode';
 import type { AdapterRunStatus, AppNode } from '../nodes/types';
+import { NODE_DRAG_MIME, type DragPayload } from './NodePanel';
 
 interface Props {
   nodes: AppNode[];
@@ -19,14 +22,16 @@ interface Props {
   onNodesChange: (changes: NodeChange<AppNode>[]) => void;
   onEdgesChange: (changes: EdgeChange[]) => void;
   onConnect: (conn: Connection) => void;
+  onAddNode: (payload: DragPayload, position: { x: number; y: number }) => void;
 }
 
-export const FlowCanvas: React.FC<Props> = ({
+const InnerCanvas: React.FC<Props> = ({
   nodes,
   edges,
   onNodesChange,
   onEdgesChange,
   onConnect,
+  onAddNode,
 }) => {
   const nodeTypes = useMemo(
     () => ({
@@ -37,8 +42,35 @@ export const FlowCanvas: React.FC<Props> = ({
     [],
   );
 
+  const { screenToFlowPosition } = useReactFlow();
+
+  const onDragOver = useCallback((event: React.DragEvent): void => {
+    event.preventDefault();
+    event.dataTransfer.dropEffect = 'copy';
+  }, []);
+
+  const onDrop = useCallback(
+    (event: React.DragEvent): void => {
+      event.preventDefault();
+      const raw = event.dataTransfer.getData(NODE_DRAG_MIME);
+      if (!raw) return;
+      let payload: DragPayload;
+      try {
+        payload = JSON.parse(raw) as DragPayload;
+      } catch {
+        return;
+      }
+      const position = screenToFlowPosition({
+        x: event.clientX,
+        y: event.clientY,
+      });
+      onAddNode(payload, position);
+    },
+    [onAddNode, screenToFlowPosition],
+  );
+
   return (
-    <div className="app-canvas">
+    <div className="app-canvas" onDragOver={onDragOver} onDrop={onDrop}>
       <ReactFlow<AppNode>
         nodes={nodes}
         edges={edges}
@@ -52,6 +84,14 @@ export const FlowCanvas: React.FC<Props> = ({
         <Controls />
       </ReactFlow>
     </div>
+  );
+};
+
+export const FlowCanvas: React.FC<Props> = (props) => {
+  return (
+    <ReactFlowProvider>
+      <InnerCanvas {...props} />
+    </ReactFlowProvider>
   );
 };
 
