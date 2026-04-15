@@ -1,0 +1,22 @@
+{
+  "name": "@rpa-tool/electron",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Electron main process for the RPA tool",
+  "main": "dist/main.js",
+  "scripts": {
+    "build": "tsc",
+    "typecheck": "tsc --noEmit",
+    "lint": "tsc --noEmit",
+    "test": "echo \"(no electron tests yet)\" && exit 0",
+    "start": "pnpm build && electron .",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "electron": "^33.2.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.9.0",
+    "typescript": "^5.6.3"
+  }
+}
