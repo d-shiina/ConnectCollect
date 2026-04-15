@@ -73,7 +73,10 @@ export interface AdapterMetadata {
   name: AdapterType;
   displayName: string;
   description: string;
+  /** ノードの config に持たせる非機密設定項目 */
   configSchema: AdapterConfigFieldSchema[];
+  /** プラグイン管理パネルから登録する機密情報 (API トークン等) */
+  credentialSchema?: AdapterConfigFieldSchema[];
 }
 
 export interface AdapterConfigFieldSchema {
@@ -150,6 +153,12 @@ export interface BridgeApi {
   setPluginEnabled(name: string, enabled: boolean): Promise<void>;
   /** プラグインフォルダをファイラで開く */
   openPluginDir(): Promise<void>;
+  /** 認証情報が登録されているか (生の値は返さない) */
+  credentialsHas(scope: string, key: string): Promise<boolean>;
+  /** 認証情報を保存 */
+  credentialsSet(scope: string, key: string, value: string): Promise<void>;
+  /** 認証情報を削除 */
+  credentialsDelete(scope: string, key: string): Promise<void>;
   /** フロー実行イベントの購読。unsubscribe 関数を返す */
   onFlowEvent(callback: (event: FlowEvent) => void): () => void;
 }
