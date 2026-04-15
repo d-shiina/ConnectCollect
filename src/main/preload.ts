@@ -12,6 +12,12 @@ const bridge: BridgeApi = {
   setPluginEnabled: (name: string, enabled: boolean) =>
     ipcRenderer.invoke('plugins:setEnabled', name, enabled),
   openPluginDir: () => ipcRenderer.invoke('plugins:openDir'),
+  credentialsHas: (scope: string, key: string) =>
+    ipcRenderer.invoke('credentials:has', scope, key),
+  credentialsSet: (scope: string, key: string, value: string) =>
+    ipcRenderer.invoke('credentials:set', scope, key, value),
+  credentialsDelete: (scope: string, key: string) =>
+    ipcRenderer.invoke('credentials:delete', scope, key),
   onFlowEvent: (callback: (event: FlowEvent) => void) => {
     const listener = (_: IpcRendererEvent, event: FlowEvent): void =>
       callback(event);

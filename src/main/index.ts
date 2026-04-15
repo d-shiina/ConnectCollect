@@ -4,6 +4,7 @@ import { promises as fs } from 'node:fs';
 import { startServer, stopServer, getServerPort } from './server';
 import { flowStore } from './flowStore';
 import { adapterRegistry, initializeAdapters } from './adapters';
+import { credentialStore } from './credentials';
 import { flowEventBus } from './events';
 import type { FlowDefinition, FlowEvent } from '../shared/types';
 
@@ -73,6 +74,25 @@ function registerIpcHandlers(): void {
     const dir = await ensurePluginDir();
     await shell.openPath(dir);
   });
+
+  // Credential management (生の値は Renderer には返さない)
+  ipcMain.handle(
+    'credentials:has',
+    async (_e, scope: string, key: string) =>
+      credentialStore.has(scope, key),
+  );
+  ipcMain.handle(
+    'credentials:set',
+    async (_e, scope: string, key: string, value: string) => {
+      await credentialStore.set(scope, key, value);
+    },
+  );
+  ipcMain.handle(
+    'credentials:delete',
+    async (_e, scope: string, key: string) => {
+      await credentialStore.delete(scope, key);
+    },
+  );
 }
 
 app.whenReady().then(async () => {
