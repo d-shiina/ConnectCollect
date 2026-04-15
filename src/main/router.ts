@@ -1,6 +1,7 @@
 import { Router, type Request, type Response } from 'express';
 import { flowStore } from './flowStore';
 import { executeFlow } from './flowEngine';
+import { handleOAuthCallback } from './oauth';
 import type { FlowDefinition } from '../shared/types';
 
 /**
@@ -113,6 +114,9 @@ export function createRouter(version: string): Router {
 
   router.post('/flows/:id/run', runHandler);
   router.get('/flows/:id/run', runHandler);
+
+  // OAuth 2.0 認可コードフローのコールバック (全 scope 共通)
+  router.get('/oauth/:scope/callback', handleOAuthCallback);
 
   return router;
 }

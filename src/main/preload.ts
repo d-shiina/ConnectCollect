@@ -18,6 +18,7 @@ const bridge: BridgeApi = {
     ipcRenderer.invoke('credentials:set', scope, key, value),
   credentialsDelete: (scope: string, key: string) =>
     ipcRenderer.invoke('credentials:delete', scope, key),
+  oauthStart: (scope: string) => ipcRenderer.invoke('oauth:start', scope),
   onFlowEvent: (callback: (event: FlowEvent) => void) => {
     const listener = (_: IpcRendererEvent, event: FlowEvent): void =>
       callback(event);

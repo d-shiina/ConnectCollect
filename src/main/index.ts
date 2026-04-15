@@ -6,6 +6,7 @@ import { flowStore } from './flowStore';
 import { adapterRegistry, initializeAdapters } from './adapters';
 import { credentialStore } from './credentials';
 import { flowEventBus } from './events';
+import { startOAuthFlow } from './oauth';
 import type { FlowDefinition, FlowEvent } from '../shared/types';
 
 // Electron Forge Vite plugin が差し込む定数
@@ -93,6 +94,20 @@ function registerIpcHandlers(): void {
       await credentialStore.delete(scope, key);
     },
   );
+
+  // OAuth 2.0 の開始。アダプタのメタから auth 情報を取ってフローを実行
+  ipcMain.handle('oauth:start', async (_e, scope: string) => {
+    const adapter = adapterRegistry.get(scope);
+    if (!adapter) return { success: false, error: `unknown plugin: ${scope}` };
+    const auth = adapter.metadata.auth;
+    if (!auth || auth.type !== 'oauth2') {
+      return {
+        success: false,
+        error: `${scope} は OAuth2 では認証できません`,
+      };
+    }
+    return startOAuthFlow(scope, auth);
+  });
 }
 
 app.whenReady().then(async () => {
