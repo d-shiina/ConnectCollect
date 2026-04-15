@@ -17,28 +17,27 @@ Python 実行エンジン (stdio JSON-RPC) で構成される。
 
 ## 必須環境
 
-- Node.js **22 以上** (`.nvmrc` 参照)
-- pnpm **9 以上**
+- Node.js **22 以上** (`.nvmrc` 参照) — 同梱の npm 10+ を使う
 - Python **3.11 以上**
 - Poetry
 
 ## セットアップ
 
 ```bash
-# Node 側
-pnpm install
+# Node 側 (npm workspaces を使う)
+npm install
 
 # Python 側
-pnpm run agent:install
+npm run agent:install
 ```
 
 ## 開発起動
 
 ```bash
-pnpm dev
+npm run dev
 ```
 
-`pnpm dev` は次を並行起動します:
+`npm run dev` は次を並行起動します:
 
 1. `frontend` の Vite dev server (`http://localhost:5173`)
 2. Vite が起動したら `electron` の main をビルドして起動
@@ -55,8 +54,8 @@ Python ランタイムの解決順:
 ## テスト
 
 ```bash
-pnpm test          # Node 側 (frontend / electron)
-pnpm agent:test    # Python 側
+npm test            # Node 側 (frontend / electron) — ワークスペースを横断
+npm run agent:test  # Python 側
 ```
 
 ## ライセンス

@@ -4,18 +4,20 @@
   "private": true,
   "description": "Self-hosted, sequential-execution RPA tool (MVP)",
   "license": "UNLICENSED",
-  "packageManager": "pnpm@9.12.3",
+  "workspaces": [
+    "electron",
+    "frontend"
+  ],
   "engines": {
-    "node": ">=22.0.0",
-    "pnpm": ">=9.0.0"
+    "node": ">=22.0.0"
   },
   "scripts": {
-    "dev": "concurrently -k -n frontend,electron -c blue,green \"pnpm --filter @rpa-tool/frontend dev\" \"wait-on http://localhost:5173 && pnpm --filter @rpa-tool/electron dev:run\"",
-    "dev:frontend": "pnpm --filter @rpa-tool/frontend dev",
-    "build": "pnpm -r build",
-    "typecheck": "pnpm -r typecheck",
-    "lint": "pnpm -r lint",
-    "test": "pnpm -r test",
+    "dev": "concurrently -k -n frontend,electron -c blue,green \"npm run dev -w @rpa-tool/frontend\" \"wait-on http://localhost:5173 && npm run dev:run -w @rpa-tool/electron\"",
+    "dev:frontend": "npm run dev -w @rpa-tool/frontend",
+    "build": "npm run build --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "lint": "npm run lint --workspaces --if-present",
+    "test": "npm run test --workspaces --if-present",
     "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,css}\" --ignore-path .gitignore",
     "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,css}\" --ignore-path .gitignore",
     "agent:install": "cd agent && poetry install",
