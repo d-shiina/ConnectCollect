@@ -6,12 +6,20 @@ import type {
   AdapterOutput,
 } from './base';
 import type { AdapterMetadata } from '../../shared/types';
+import { refreshOAuthToken } from '../oauth';
+
+const BOX_AUTH = {
+  type: 'oauth2' as const,
+  authorizeUrl: 'https://account.box.com/api/oauth2/authorize',
+  tokenUrl: 'https://api.box.com/oauth2/token',
+  scopes: ['root_readwrite'],
+};
 
 const metadata: AdapterMetadata = {
   name: 'box',
   displayName: 'Box',
   description:
-    'Box へのファイル操作。現状は Developer Token モードで listFolder のみ対応。',
+    'Box へのファイル操作 (OAuth 2.0)。現状は listFolder のみ実装。',
   configSchema: [
     {
       key: 'action',
@@ -28,15 +36,7 @@ const metadata: AdapterMetadata = {
       placeholder: '0 (=ルート)',
     },
   ],
-  credentialSchema: [
-    {
-      key: 'devToken',
-      label: 'Developer Token',
-      type: 'password',
-      required: true,
-      placeholder: 'Box Developer Console で発行した 60 分有効なトークン',
-    },
-  ],
+  auth: BOX_AUTH,
 };
 
 type BoxItem = {
@@ -79,20 +79,12 @@ export const boxAdapter: Adapter = {
     input: AdapterInput,
     ctx: AdapterExecutionContext,
   ): Promise<AdapterOutput> {
-    // トークン取得: まず credentialStore、config に devToken があれば上書き保存
-    let token = await ctx.credentials.get<string>('devToken');
-    const configToken =
-      typeof config.devToken === 'string' ? config.devToken : '';
-    if (configToken) {
-      token = configToken;
-      await ctx.credentials.set('devToken', configToken);
-      ctx.log('warn', 'Box: config.devToken を受け取ったので credentialStore に保存しました (次回からは config から消して OK)');
-    }
+    let token = await ctx.credentials.get<string>('accessToken');
     if (!token) {
       return {
         success: false,
         error:
-          'Box の Developer Token が未設定です。プラグイン管理パネルから登録してください。',
+          'Box の access token がありません。プラグイン管理パネルの「Box に接続」から OAuth 認証してください。',
       };
     }
 
@@ -101,43 +93,70 @@ export const boxAdapter: Adapter = {
       (typeof input.action === 'string' && input.action) ||
       'listFolder';
 
-    switch (action) {
-      case 'listFolder': {
-        const folderId =
-          (typeof config.folderId === 'string' && config.folderId) ||
-          (typeof input.folderId === 'string' && input.folderId) ||
-          '0';
-        ctx.log('info', `Box: GET /folders/${folderId}/items`);
-        const res = await boxFetch(
-          `/folders/${encodeURIComponent(folderId)}/items?limit=100`,
-          token,
-        );
-        if (!res.ok) {
+    const run = async (): Promise<AdapterOutput> => {
+      switch (action) {
+        case 'listFolder': {
+          const folderId =
+            (typeof config.folderId === 'string' && config.folderId) ||
+            (typeof input.folderId === 'string' && input.folderId) ||
+            '0';
+          ctx.log('info', `Box: GET /folders/${folderId}/items`);
+          const res = await boxFetch(
+            `/folders/${encodeURIComponent(folderId)}/items?limit=100`,
+            token as string,
+          );
+          if (!res.ok) {
+            return {
+              success: false,
+              error: `Box API ${res.status}: ${JSON.stringify(res.body)}`,
+            };
+          }
+          const data = res.body as BoxListResponse;
+          ctx.log(
+            'info',
+            `Box: ${data.total_count} 件見つかりました (先頭 ${data.entries?.length ?? 0} 件)`,
+          );
           return {
-            success: false,
-            error: `Box API ${res.status}: ${JSON.stringify(res.body)}`,
+            success: true,
+            data: {
+              folderId,
+              totalCount: data.total_count,
+              entries: data.entries,
+            },
           };
         }
-        const data = res.body as BoxListResponse;
-        ctx.log(
-          'info',
-          `Box: ${data.total_count} 件見つかりました (先頭 ${data.entries?.length ?? 0} 件)`,
-        );
-        return {
-          success: true,
-          data: {
-            folderId,
-            totalCount: data.total_count,
-            entries: data.entries,
-          },
-        };
+        default:
+          return {
+            success: false,
+            error: `サポートされていない action: ${action} (現状 listFolder のみ)`,
+          };
       }
+    };
 
-      default:
+    let result = await run();
+
+    // 401 を検出したら refresh token で自動更新して 1 回だけリトライ
+    if (
+      !result.success &&
+      result.error &&
+      result.error.startsWith('Box API 401')
+    ) {
+      ctx.log('warn', 'Box: 401 を受信、refresh token で再認証を試みます');
+      const refreshed = await refreshOAuthToken('box', BOX_AUTH);
+      if (!refreshed.success) {
         return {
           success: false,
-          error: `サポートされていない action: ${action} (現状 listFolder のみ)`,
+          error: `Box token refresh 失敗: ${refreshed.error ?? 'unknown'}。再認証してください。`,
         };
+      }
+      token = await ctx.credentials.get<string>('accessToken');
+      if (!token) {
+        return { success: false, error: 'refresh 後に accessToken が取得できませんでした' };
+      }
+      ctx.log('info', 'Box: token を更新しました、リトライします');
+      result = await run();
     }
+
+    return result;
   },
 };

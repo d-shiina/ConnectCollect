@@ -24,14 +24,19 @@ const metadata: AdapterMetadata = {
       required: true,
       placeholder: '123',
     },
-    {
-      key: 'apiToken',
-      label: 'API Token',
-      type: 'password',
-      required: true,
-      placeholder: 'xxxxxxxxxxxxxxxxxxxxxxxx',
-    },
   ],
+  auth: {
+    type: 'static',
+    fields: [
+      {
+        key: 'apiToken',
+        label: 'API Token',
+        type: 'password',
+        required: true,
+        placeholder: 'xxxxxxxxxxxxxxxxxxxxxxxx',
+      },
+    ],
+  },
 };
 
 const sleep = (ms: number): Promise<void> =>
@@ -46,15 +51,17 @@ export const kintoneAdapter: Adapter = {
   async execute(
     config: AdapterConfig,
     input: AdapterInput,
-    _ctx: AdapterExecutionContext,
+    ctx: AdapterExecutionContext,
   ): Promise<AdapterOutput> {
-    const apiToken = typeof config.apiToken === 'string' ? config.apiToken : '';
+    // apiToken は credentialStore から取得 (旧: config に平文で持たせていた)
+    const apiToken = (await ctx.credentials.get<string>('apiToken')) ?? '';
     const appId = typeof config.appId === 'string' ? config.appId : '';
 
     if (!apiToken) {
       return {
         success: false,
-        error: 'kintone apiToken が設定されていません',
+        error:
+          'kintone API Token が未設定です。プラグイン管理パネルから登録してください。',
       };
     }
 
