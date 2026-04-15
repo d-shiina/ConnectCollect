@@ -1,0 +1,28 @@
+{
+  "name": "rpa-tool",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Self-hosted, sequential-execution RPA tool (MVP)",
+  "license": "UNLICENSED",
+  "packageManager": "pnpm@9.12.3",
+  "engines": {
+    "node": ">=22.0.0",
+    "pnpm": ">=9.0.0"
+  },
+  "scripts": {
+    "dev": "pnpm --filter frontend dev",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "pnpm -r lint",
+    "test": "pnpm -r test",
+    "format": "prettier --write \"**/*.{ts,tsx,js,jsx,json,md,css}\" --ignore-path .gitignore",
+    "format:check": "prettier --check \"**/*.{ts,tsx,js,jsx,json,md,css}\" --ignore-path .gitignore",
+    "agent:install": "cd agent && poetry install",
+    "agent:test": "cd agent && poetry run pytest",
+    "agent:lint": "cd agent && poetry run ruff check src tests"
+  },
+  "devDependencies": {
+    "prettier": "^3.3.3",
+    "typescript": "^5.6.3"
+  }
+}

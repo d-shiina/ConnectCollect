@@ -1,0 +1,9 @@
+node_modules
+dist
+build
+out
+.vite
+coverage
+agent/.venv
+agent/poetry.lock
+pnpm-lock.yaml
