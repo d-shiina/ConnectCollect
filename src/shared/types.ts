@@ -68,6 +68,36 @@ export interface FlowRunResult {
   logs: LogEntry[];
 }
 
+/**
+ * プラグインが宣言する認証方式。
+ * プラグインごとに異なるため、アダプタ側で明示する。
+ *
+ * - none: 認証不要
+ * - static: 固定の API キー / トークンを credentialStore に保存
+ * - oauth2: OAuth 2.0 認可コードフロー。BrowserWindow で authorize_url に
+ *   誘導して、Express のコールバックで code → token を交換する
+ */
+export type PluginAuthMethod =
+  | { type: 'none' }
+  | {
+      type: 'static';
+      fields: AdapterConfigFieldSchema[];
+    }
+  | {
+      type: 'oauth2';
+      authorizeUrl: string;
+      tokenUrl: string;
+      scopes?: string[];
+      /** credentialStore のキー名 (デフォルト: clientId / clientSecret / accessToken / refreshToken / expiresAt) */
+      clientIdKey?: string;
+      clientSecretKey?: string;
+      accessTokenKey?: string;
+      refreshTokenKey?: string;
+      expiresAtKey?: string;
+      /** Express が受け付けるコールバックパス (デフォルト: /oauth/<scope>/callback) */
+      redirectPath?: string;
+    };
+
 // アダプタのメタ情報 (UI 表示や一覧取得用)
 export interface AdapterMetadata {
   name: AdapterType;
@@ -75,8 +105,8 @@ export interface AdapterMetadata {
   description: string;
   /** ノードの config に持たせる非機密設定項目 */
   configSchema: AdapterConfigFieldSchema[];
-  /** プラグイン管理パネルから登録する機密情報 (API トークン等) */
-  credentialSchema?: AdapterConfigFieldSchema[];
+  /** プラグインが要求する認証方式。未指定は none 扱い。 */
+  auth?: PluginAuthMethod;
 }
 
 export interface AdapterConfigFieldSchema {
@@ -159,6 +189,8 @@ export interface BridgeApi {
   credentialsSet(scope: string, key: string, value: string): Promise<void>;
   /** 認証情報を削除 */
   credentialsDelete(scope: string, key: string): Promise<void>;
+  /** OAuth 2.0 フローを開始する (Main 側で BrowserWindow を開いて code を捕捉) */
+  oauthStart(scope: string): Promise<{ success: boolean; error?: string }>;
   /** フロー実行イベントの購読。unsubscribe 関数を返す */
   onFlowEvent(callback: (event: FlowEvent) => void): () => void;
 }
