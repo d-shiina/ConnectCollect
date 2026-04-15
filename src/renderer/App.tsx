@@ -20,6 +20,7 @@ import { LogPanel } from './components/LogPanel';
 import { Toolbar } from './components/Toolbar';
 import { WinActorCallPanel } from './components/WinActorCallPanel';
 import { PluginManagerPanel } from './components/PluginManagerPanel';
+import { NodeInspector } from './components/NodeInspector';
 import type { AppNode } from './nodes/types';
 import type {
   AdapterMetadata,
@@ -209,6 +210,35 @@ export const App: React.FC = () => {
     [],
   );
 
+  const selectedNode = nodes.find((n) => n.selected) ?? null;
+
+  const handleUpdateNode = useCallback(
+    (
+      id: string,
+      patch: { label?: string; config?: Record<string, unknown> },
+    ): void => {
+      setNodes((ns) =>
+        ns.map((n) => {
+          if (n.id !== id) return n;
+          const nextData: typeof n.data = { ...n.data };
+          if (patch.label !== undefined) nextData.label = patch.label;
+          if (patch.config !== undefined) {
+            (nextData as { config?: Record<string, unknown> }).config =
+              patch.config;
+          }
+          return { ...n, data: nextData };
+        }),
+      );
+    },
+    [],
+  );
+
+  const handleDeselectNode = useCallback((): void => {
+    setNodes((ns) =>
+      ns.map((n) => (n.selected ? { ...n, selected: false } : n)),
+    );
+  }, []);
+
   const handleAddNode = useCallback(
     (payload: DragPayload, position: { x: number; y: number }): void => {
       const id = `${payload.nodeType}-${Date.now().toString(36)}-${Math.floor(
@@ -316,7 +346,7 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="app">
+    <div className={`app ${selectedNode ? 'with-inspector' : ''}`}>
       <Toolbar
         flowId={flowId}
         flowName={flowName}
@@ -336,6 +366,14 @@ export const App: React.FC = () => {
         onConnect={onConnect}
         onAddNode={handleAddNode}
       />
+      {selectedNode && (
+        <NodeInspector
+          node={selectedNode}
+          adapters={adapters}
+          onUpdateNode={handleUpdateNode}
+          onClose={handleDeselectNode}
+        />
+      )}
       <LogPanel logs={logs} />
       <WinActorCallPanel
         open={winActorPanelOpen}
