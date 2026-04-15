@@ -357,6 +357,78 @@ body,
   color: var(--text-dim);
 }
 
+/* 認証情報フォーム (プラグイン詳細内) */
+.plugin-cred {
+  margin-top: 10px;
+  padding-top: 8px;
+  border-top: 1px dashed var(--panel-border);
+}
+
+.plugin-cred-row {
+  margin-bottom: 10px;
+}
+
+.plugin-cred-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 4px;
+  flex-wrap: wrap;
+  font-size: 11px;
+}
+
+.plugin-cred-head code {
+  font-family: 'SFMono-Regular', Menlo, Consolas, monospace;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 1px 5px;
+  border-radius: 3px;
+}
+
+.plugin-cred-label {
+  color: var(--text-dim);
+}
+
+.plugin-cred-status {
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+.plugin-cred-status.set {
+  background: rgba(34, 197, 94, 0.18);
+  color: #7aeab5;
+}
+
+.plugin-cred-status.unset {
+  background: rgba(240, 82, 82, 0.18);
+  color: #ff9b9b;
+}
+
+.plugin-cred-edit {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.plugin-cred-edit input {
+  flex: 1;
+  background: #1d2330;
+  color: var(--text);
+  border: 1px solid var(--panel-border);
+  border-radius: 4px;
+  padding: 5px 8px;
+  font-size: 12px;
+  font-family: 'SFMono-Regular', Menlo, Consolas, monospace;
+}
+
+.plugin-cred-edit input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
 /* トグルスイッチ */
 .toggle {
   position: relative;
