@@ -5,6 +5,8 @@ import type {
   LogEntry,
 } from '../shared/types';
 import { adapterRegistry } from './adapters';
+import type { AdapterExecutionContext } from './adapters/base';
+import { credentialStore } from './credentials';
 import { flowEventBus } from './events';
 
 /**
@@ -135,9 +137,15 @@ export async function executeFlow(
               `アダプタが無効化されています: ${adapterType} (node=${node.id})`,
             );
           }
+          const ctx: AdapterExecutionContext = {
+            credentials: credentialStore.scoped(adapter.name),
+            log: (level, message) =>
+              pushLog(makeLog(level, `[${adapter.name}] ${message}`, node.id)),
+          };
           const output = await adapter.execute(
             node.data.config ?? {},
             currentPayload,
+            ctx,
           );
           if (!output.success) {
             pushLog(
