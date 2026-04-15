@@ -78,6 +78,7 @@ const InnerCanvas: React.FC<Props> = ({
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
+        deleteKeyCode={['Delete', 'Backspace']}
         fitView
       >
         <Background gap={18} size={1} color="#2a303f" />
