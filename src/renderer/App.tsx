@@ -15,7 +15,7 @@ import {
   clearEdgeAnimations,
   setEdgesAnimatedForNode,
 } from './components/FlowCanvas';
-import { NodePanel } from './components/NodePanel';
+import { NodePanel, type DragPayload } from './components/NodePanel';
 import { LogPanel } from './components/LogPanel';
 import { Toolbar } from './components/Toolbar';
 import { WinActorCallPanel } from './components/WinActorCallPanel';
@@ -209,6 +209,45 @@ export const App: React.FC = () => {
     [],
   );
 
+  const handleAddNode = useCallback(
+    (payload: DragPayload, position: { x: number; y: number }): void => {
+      const id = `${payload.nodeType}-${Date.now().toString(36)}-${Math.floor(
+        Math.random() * 1e4,
+      ).toString(36)}`;
+      const newNode: AppNode = (() => {
+        if (payload.nodeType === 'trigger') {
+          return {
+            id,
+            type: 'trigger',
+            position,
+            data: { label: payload.label, status: 'idle' },
+          };
+        }
+        if (payload.nodeType === 'adapter') {
+          return {
+            id,
+            type: 'adapter',
+            position,
+            data: {
+              label: payload.label,
+              adapterType: payload.adapterType,
+              config: {},
+              status: 'idle',
+            },
+          };
+        }
+        return {
+          id,
+          type: 'transform',
+          position,
+          data: { label: payload.label, status: 'idle' },
+        };
+      })();
+      setNodes((ns) => [...ns, newNode]);
+    },
+    [],
+  );
+
   const appendLog = (entry: LogEntry): void => {
     setLogs((prev) => [...prev, entry]);
   };
@@ -255,6 +294,8 @@ export const App: React.FC = () => {
   };
 
   const handleRun = async (): Promise<void> => {
+    // UI 状態 (running, ノードステータス, ログ) はすべて Main からの
+    // flow-event で更新されるので、ここでは HTTP 呼び出しだけ行う。
     try {
       const flow = buildFlowDefinition();
       await window.bridge.saveFlow(flow);
@@ -293,6 +334,7 @@ export const App: React.FC = () => {
         onNodesChange={onNodesChange}
         onEdgesChange={onEdgesChange}
         onConnect={onConnect}
+        onAddNode={handleAddNode}
       />
       <LogPanel logs={logs} />
       <WinActorCallPanel
