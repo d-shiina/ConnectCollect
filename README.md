@@ -34,8 +34,23 @@ pnpm run agent:install
 
 ## 開発起動
 
-各 Step の進捗に応じて段階的に動く状態になります。Step 5 以降で
-`pnpm dev` が Electron + Frontend + Python Agent をまとめて立ち上げます。
+```bash
+pnpm dev
+```
+
+`pnpm dev` は次を並行起動します:
+
+1. `frontend` の Vite dev server (`http://localhost:5173`)
+2. Vite が起動したら `electron` の main をビルドして起動
+   - `VITE_DEV_SERVER_URL` 環境変数で Vite を指す
+   - 起動時に Python agent (`python -m agent`) を子プロセスとして spawn
+   - DevTools が detach モードで自動で開く
+
+Python ランタイムの解決順:
+
+1. `RPA_AGENT_PYTHON` 環境変数 (絶対パス)
+2. `agent/.venv/bin/python` (Poetry で作成された venv)
+3. システムの `python3`
 
 ## テスト
 

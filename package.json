@@ -10,7 +10,8 @@
     "pnpm": ">=9.0.0"
   },
   "scripts": {
-    "dev": "pnpm --filter frontend dev",
+    "dev": "concurrently -k -n frontend,electron -c blue,green \"pnpm --filter @rpa-tool/frontend dev\" \"wait-on http://localhost:5173 && pnpm --filter @rpa-tool/electron dev:run\"",
+    "dev:frontend": "pnpm --filter @rpa-tool/frontend dev",
     "build": "pnpm -r build",
     "typecheck": "pnpm -r typecheck",
     "lint": "pnpm -r lint",
@@ -22,7 +23,9 @@
     "agent:lint": "cd agent && poetry run ruff check src tests"
   },
   "devDependencies": {
+    "concurrently": "^9.1.0",
     "prettier": "^3.3.3",
-    "typescript": "^5.6.3"
+    "typescript": "^5.6.3",
+    "wait-on": "^8.0.1"
   }
 }

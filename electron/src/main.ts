@@ -1,16 +1,41 @@
 import { app, BrowserWindow } from 'electron';
+import path from 'node:path';
 import { createMainWindow } from './window';
+import { PythonBridge } from './python-bridge';
+import { registerIpcHandlers } from './ipc-handlers';
 
 /**
  * Electron main process エントリポイント。
  *
- * Step 2 時点では「空の BrowserWindow を 1 つ開くだけ」のミニマム実装。
- * Step 3 で React (Vite) を読み込み、Step 5 で Python agent と接続する。
+ * 起動順序:
+ *  1. Python agent (rpa-agent) を子プロセスとして spawn
+ *  2. IPC ハンドラを登録 (Renderer → main → agent への中継)
+ *  3. BrowserWindow を生成
+ *
+ * 終了時は agent をきれいに stop してからプロセス終了。
  */
 
 let mainWindow: BrowserWindow | null = null;
+let pythonBridge: PythonBridge | null = null;
+
+function resolveAgentDir(): string {
+  // electron/dist/main.js から見て ../../agent
+  return path.resolve(__dirname, '..', '..', 'agent');
+}
 
 function bootstrap(): void {
+  const agentDir = resolveAgentDir();
+  pythonBridge = new PythonBridge({
+    agentDir,
+    userDataDir: app.getPath('userData'),
+    onStderr: (line) => {
+      // eslint-disable-next-line no-console
+      console.error(`[agent] ${line}`);
+    },
+  });
+  pythonBridge.start();
+  registerIpcHandlers(pythonBridge, () => mainWindow);
+
   mainWindow = createMainWindow();
   mainWindow.on('closed', () => {
     mainWindow = null;
@@ -20,22 +45,26 @@ function bootstrap(): void {
 app.whenReady().then(() => {
   bootstrap();
 
-  // macOS: dock からの再アクティブ化に対応
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) {
-      bootstrap();
+      mainWindow = createMainWindow();
     }
   });
 });
 
-// Windows / Linux: 全ウィンドウが閉じたら終了
-app.on('window-all-closed', () => {
+app.on('window-all-closed', async () => {
+  await pythonBridge?.stop();
+  pythonBridge = null;
   if (process.platform !== 'darwin') {
     app.quit();
   }
 });
 
-// 未捕捉エラーは標準エラーへ吐く (Step 5 で構造化ログに置き換え予定)
+app.on('before-quit', async () => {
+  await pythonBridge?.stop();
+  pythonBridge = null;
+});
+
 process.on('uncaughtException', (err) => {
   // eslint-disable-next-line no-console
   console.error('[main] uncaughtException', err);
